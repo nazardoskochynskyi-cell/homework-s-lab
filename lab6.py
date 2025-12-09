@@ -2,11 +2,12 @@ import os
 import logging
 import json
 
-# ==============ЛОГУВАННЯ===================
-class MyFileNotFoundError(Exception):
-    pass
-class FileCorrupted(Exception):
-    pass
+class MyFileNotFoundError(OSError):
+    """Custom exception for the situation when the file is not found."""
+
+class FileCorrupted(OSError):
+    """Custom exception for the situation when the file is corrupted."""
+
 def logged(exception_type, mode):
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -18,7 +19,7 @@ def logged(exception_type, mode):
                     logger.handlers.clear()
                 if mode == "file":
                     handler = logging.FileHandler("app_errors.log", encoding='utf-8')
-                    
+                else: logger = logging.StreamHandler() 
                 formatter = logging.Formatter('%(asctime)s - ERROR - %(message)s')
                 handler.setFormatter(formatter)
                 logger.addHandler(handler)
@@ -27,8 +28,11 @@ def logged(exception_type, mode):
                 return f"[LOGGED] Error handled ({mode})"
         return wrapper
     return decorator
-# ==========================================
 class FileOperations:
+    """
+    Class for performing operations with JSON files (reading, writing, appending)
+    with an error logging system.
+    """
     def __init__(self, name_1, write_mode='w', read_mode='r', append_mode='a'):
         self.name_1 = name_1
         self.write_mode = write_mode
@@ -50,7 +54,7 @@ class FileOperations:
             with open(self.name_1, self.write_mode, encoding='utf-8') as f:
                 json.dump(text, f, indent=4)
             return("File written successfully")
-        except Exception as e:
+        except OSError as e:
             raise FileCorrupted(f"cannot write to file '{self.name_1}': {e}")   
 
     @logged(FileCorrupted, mode="file")   
@@ -72,7 +76,7 @@ class FileOperations:
             with open(self.name_1, self.write_mode, encoding='utf-8') as f:
                 json.dump(data, f, indent=4)
             return("File appended successfully")
-        except Exception as e:
+        except OSError as e:
             raise FileCorrupted(f"cannot append to file '{self.name_1}': {e}")
 
     @property
@@ -94,7 +98,7 @@ class FileOperations:
         print(f"New append mode: {text}")
 
 if __name__ == "__main__":
-    
+    '''Basic tests of the FileOperations class functionality'''
     print(f"_File location {os.getcwd()}_")
 
     file_check = "new_name.json"
